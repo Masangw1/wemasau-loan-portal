@@ -418,7 +418,7 @@
                     </div>
                     <div class="form-group">
                         <label>Purpose <span class="required">*</span> (min 50 characters)</label>
-                        <textarea id="purpose" rows="3" required></textarea>
+                        <textarea id="purpose" rows="3" required placeholder="Please describe in detail how you will use this loan..."></textarea>
                         <small id="purposeWarning" style="color:#d97706; display:none;">⚠️ 50 characters minimum</small>
                     </div>
                 </div>
@@ -563,7 +563,7 @@
 <script>
     // ===== CONFIGURATION =====
     const API_URL = "https://script.google.com/macros/s/AKfycbyn7mEgeVf--24lQwo2xO7JPkdCpXBScc2X8CqIt7k_r25Eynq7v3opCbnhAblEuinW/exec";
-    const API_PASSWORD = "WeMasau2026!";  // Fixed API password
+    const API_PASSWORD = "WeMasau2026!";
     
     let currentAdmin = null;
     let allApplications = [];
@@ -595,21 +595,18 @@
         });
     }
     
-    // ===== JSONP API Calls (Bypasses CORS) =====
+    // ===== JSONP API Calls =====
     function jsonpRequest(action, data, callback) {
         const callbackName = `jsonp_callback_${Date.now()}_${callbackCounter++}`;
         const url = new URL(API_URL);
         
-        // Add parameters
         url.searchParams.set('action', action);
         url.searchParams.set('data', JSON.stringify(data));
         url.searchParams.set('callback', callbackName);
         
-        // Create script element
         const script = document.createElement('script');
         script.src = url.toString();
         
-        // Setup timeout
         const timeout = setTimeout(() => {
             if (window[callbackName]) {
                 delete window[callbackName];
@@ -618,7 +615,6 @@
             }
         }, 30000);
         
-        // Define callback function
         window[callbackName] = function(response) {
             clearTimeout(timeout);
             delete window[callbackName];
@@ -626,7 +622,6 @@
             callback(response);
         };
         
-        // Add error handling
         script.onerror = function() {
             clearTimeout(timeout);
             delete window[callbackName];
@@ -634,7 +629,6 @@
             callback({ error: "Network error" });
         };
         
-        // Add to document
         document.head.appendChild(script);
     }
     
@@ -670,12 +664,10 @@
         if (!currentAdmin) return;
         
         try {
-            // IMPORTANT: Use the fixed API password, not the member's password
             const result = await callAPI("getLoans", { password: API_PASSWORD });
             if (result.success) {
                 allApplications = result.loans || [];
                 renderAdminList();
-                showStatus(`Loaded ${allApplications.length} applications`, "success", "adminStatusMsg");
             } else {
                 showStatus("Error loading: " + result.error, "error", "adminStatusMsg");
                 document.getElementById("applicationsList").innerHTML = '<div class="loading">❌ ' + escapeHtml(result.error) + '</div>';
@@ -791,7 +783,7 @@
         
         const purpose = document.getElementById("purpose").value.trim();
         if (purpose.length < 50) {
-            showStatus("Purpose must be at least 50 characters", "error");
+            showStatus("Purpose must be at least 50 characters (currently " + purpose.length + ")", "error");
             return;
         }
         
@@ -832,6 +824,7 @@
             return;
         }
         
+        console.log("Submitting application:", appData);
         await submitLoanApplication(appData);
     };
     
@@ -893,18 +886,20 @@
     
     document.getElementById("purpose").oninput = function() {
         const warn = document.getElementById("purposeWarning");
-        warn.style.display = this.value.length < 50 && this.value.length > 0 ? "inline-block" : "none";
+        const len = this.value.length;
+        warn.style.display = len < 50 && len > 0 ? "inline-block" : "none";
+        if (len > 0 && len < 50) {
+            warn.innerHTML = `⚠️ ${len}/50 characters minimum`;
+        }
     };
     
-    // Set minimum date for disbursement
     const today = new Date().toISOString().split("T")[0];
     document.getElementById("disbursementDate").setAttribute("min", today);
     
-    // Test connection on load
     window.addEventListener("load", async () => {
-        console.log("✅ Page loaded, using JSONP for API calls");
+        console.log("✅ Page loaded");
         console.log("API URL:", API_URL);
-        showStatus("System ready. You can submit applications.", "info");
+        showStatus("System ready. Please fill out the form.", "info");
     });
 </script>
 </body>
