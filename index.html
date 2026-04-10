@@ -563,6 +563,7 @@
 <script>
     // ===== CONFIGURATION =====
     const API_URL = "https://script.google.com/macros/s/AKfycbxmIevUnxAdwc2-uynRu83OMYUtaiCovYKPKQxt1pVnTj6UX6djog-iDCnEiKR8De3M/exec";
+    const API_PASSWORD = "WeMasau2026!";  // Fixed API password
     
     let currentAdmin = null;
     let allApplications = [];
@@ -669,18 +670,19 @@
         if (!currentAdmin) return;
         
         try {
-            // Use the fixed admin password for API access
-            const result = await callAPI("getLoans", { password: "WeMasau2026!" });
+            // IMPORTANT: Use the fixed API password, not the member's password
+            const result = await callAPI("getLoans", { password: API_PASSWORD });
             if (result.success) {
                 allApplications = result.loans || [];
                 renderAdminList();
+                showStatus(`Loaded ${allApplications.length} applications`, "success", "adminStatusMsg");
             } else {
                 showStatus("Error loading: " + result.error, "error", "adminStatusMsg");
-                document.getElementById("applicationsList").innerHTML = '<div class="loading">❌ ' + result.error + '</div>';
+                document.getElementById("applicationsList").innerHTML = '<div class="loading">❌ ' + escapeHtml(result.error) + '</div>';
             }
         } catch (error) {
             console.error("Load error:", error);
-            document.getElementById("applicationsList").innerHTML = '<div class="loading">❌ Failed to load applications: ' + error.message + '</div>';
+            document.getElementById("applicationsList").innerHTML = '<div class="loading">❌ Failed to load applications: ' + escapeHtml(error.message) + '</div>';
         }
     }
     
@@ -901,6 +903,7 @@
     // Test connection on load
     window.addEventListener("load", async () => {
         console.log("✅ Page loaded, using JSONP for API calls");
+        console.log("API URL:", API_URL);
         showStatus("System ready. You can submit applications.", "info");
     });
 </script>
