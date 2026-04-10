@@ -562,11 +562,11 @@
 
 <script>
     // ===== CONFIGURATION =====
-    // IMPORTANT: Replace this with your Apps Script Web App URL
-    const API_URL = "https://script.google.com/macros/s/AKfycbxmIevUnxAdwc2-uynRu83OMYUtaiCovYKPKQxt1pVnTj6UX6djog-iDCnEiKR8De3M/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxYCSeILwLFE_BPfM3ktVf4AvoQwAp4VQJfkxl-3qo-e1CN7dTRugRuz6GbuYa5FlPR/exec";
     
     let currentAdmin = null;
     let allApplications = [];
+    let callbackCounter = 0;
     
     // ===== Helper Functions =====
     function showStatus(message, type, elementId = "formStatus") {
@@ -594,28 +594,59 @@
         });
     }
     
-    // ===== API Calls =====
-    async function callAPI(action, data = {}) {
-        try {
-            const response = await fetch(API_URL, {
-                method: "POST",
-                mode: "cors",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ action, ...data })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+    // ===== JSONP API Calls (Bypasses CORS) =====
+    function jsonpRequest(action, data, callback) {
+        const callbackName = `jsonp_callback_${Date.now()}_${callbackCounter++}`;
+        const url = new URL(API_URL);
+        
+        // Add parameters
+        url.searchParams.set('action', action);
+        url.searchParams.set('data', JSON.stringify(data));
+        url.searchParams.set('callback', callbackName);
+        
+        // Create script element
+        const script = document.createElement('script');
+        script.src = url.toString();
+        
+        // Setup timeout
+        const timeout = setTimeout(() => {
+            if (window[callbackName]) {
+                delete window[callbackName];
+                script.remove();
+                callback({ error: "Request timeout" });
             }
-            
-            const result = await response.json();
-            return result;
-        } catch (error) {
-            console.error("API Error:", error);
-            throw new Error("Network error: " + error.message);
-        }
+        }, 30000);
+        
+        // Define callback function
+        window[callbackName] = function(response) {
+            clearTimeout(timeout);
+            delete window[callbackName];
+            script.remove();
+            callback(response);
+        };
+        
+        // Add error handling
+        script.onerror = function() {
+            clearTimeout(timeout);
+            delete window[callbackName];
+            script.remove();
+            callback({ error: "Network error" });
+        };
+        
+        // Add to document
+        document.head.appendChild(script);
+    }
+    
+    async function callAPI(action, data = {}) {
+        return new Promise((resolve, reject) => {
+            jsonpRequest(action, data, (response) => {
+                if (response.error) {
+                    reject(new Error(response.error));
+                } else {
+                    resolve(response);
+                }
+            });
+        });
     }
     
     async function submitLoanApplication(appData) {
@@ -867,15 +898,8 @@
     
     // Test connection on load
     window.addEventListener("load", async () => {
-        console.log("✅ Page loaded, API URL:", API_URL);
-        try {
-            const test = await callAPI("testConnection");
-            if (test.success) {
-                console.log("✅ Connected to API successfully");
-            }
-        } catch(e) {
-            console.error("Connection test failed:", e);
-        }
+        console.log("✅ Page loaded, using JSONP for API calls");
+        showStatus("System ready. You can submit applications.", "info");
     });
 </script>
 </body>
