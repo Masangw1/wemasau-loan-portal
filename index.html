@@ -562,7 +562,7 @@
 
 <script>
     // ===== CONFIGURATION =====
-    const API_URL = "https://script.google.com/macros/s/AKfycbxYCSeILwLFE_BPfM3ktVf4AvoQwAp4VQJfkxl-3qo-e1CN7dTRugRuz6GbuYa5FlPR/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxmIevUnxAdwc2-uynRu83OMYUtaiCovYKPKQxt1pVnTj6UX6djog-iDCnEiKR8De3M/exec";
     
     let currentAdmin = null;
     let allApplications = [];
@@ -669,16 +669,18 @@
         if (!currentAdmin) return;
         
         try {
-            const result = await callAPI("getLoans", { password: currentAdmin.password });
+            // Use the fixed admin password for API access
+            const result = await callAPI("getLoans", { password: "WeMasau2026!" });
             if (result.success) {
                 allApplications = result.loans || [];
                 renderAdminList();
             } else {
                 showStatus("Error loading: " + result.error, "error", "adminStatusMsg");
+                document.getElementById("applicationsList").innerHTML = '<div class="loading">❌ ' + result.error + '</div>';
             }
         } catch (error) {
             console.error("Load error:", error);
-            document.getElementById("applicationsList").innerHTML = '<div class="loading">❌ Failed to load applications</div>';
+            document.getElementById("applicationsList").innerHTML = '<div class="loading">❌ Failed to load applications: ' + error.message + '</div>';
         }
     }
     
