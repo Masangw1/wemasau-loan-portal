@@ -36,6 +36,7 @@
         .status { margin-top: 16px; padding: 12px; border-radius: 12px; display: none; font-weight: 500; }
         .status.success { background: #c6f6d5; color: #22543d; display: block; }
         .status.error { background: #fed7d7; color: #742a2a; display: block; }
+        .status.info { background: #bee3f8; color: #2c5282; display: block; }
         .admin-panel { display: none; }
         .admin-header { background: #1e293b; padding: 16px 20px; color: white; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .loan-card { background: #f8fafc; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #e2e8f0; }
@@ -178,6 +179,7 @@
 </div>
 
 <script>
+    // ===== CONFIGURATION =====
     const API_URL = "https://script.google.com/macros/s/AKfycbzulfTxOmxGSRubBTtlHIvAHHNLoZSxkPV9o-u39weAHtRv8z7Hf9rMfBnwP2ZQnT30/exec";
     const API_PASSWORD = "WeMasau2026!";
     
@@ -213,6 +215,8 @@
         url.searchParams.set('data', JSON.stringify(data));
         url.searchParams.set('callback', callbackName);
         
+        console.log(`📤 JSONP Request - Action: ${action}`, data);
+        
         const script = document.createElement('script');
         script.src = url.toString();
         
@@ -225,6 +229,7 @@
         }, 30000);
         
         window[callbackName] = function(response) {
+            console.log(`📥 JSONP Response - Action: ${action}`, response);
             clearTimeout(timeout);
             delete window[callbackName];
             script.remove();
@@ -297,7 +302,7 @@
             guarantor2Phone: document.getElementById("guarantor2Phone").value.trim()
         };
         
-        console.log("Submitting:", appData);
+        console.log("📝 Submitting application:", appData);
         
         try {
             const result = await callAPI("saveLoan", { appData });
@@ -306,20 +311,25 @@
                 document.getElementById("loanForm").reset();
                 document.getElementById("otherLoanGroup").style.display = "none";
                 document.getElementById("existingBalanceGroup").style.display = "none";
+                console.log("✅ Submission successful!");
             } else {
                 showStatus("❌ Error: " + result.error, "error");
+                console.error("❌ Submission failed:", result.error);
             }
         } catch (error) {
             showStatus("❌ Error: " + error.message, "error");
+            console.error("❌ Exception:", error);
         }
     };
     
     async function loadApplications() {
         if (!currentAdmin) return;
+        console.log("📋 Loading applications...");
         try {
             const result = await callAPI("getLoans", { password: API_PASSWORD });
             if (result.success) {
                 allApplications = result.loans || [];
+                console.log(`✅ Loaded ${allApplications.length} applications`);
                 const container = document.getElementById("applicationsList");
                 if (!allApplications.length) {
                     container.innerHTML = '<div class="loading">✨ No applications yet</div>';
@@ -334,12 +344,12 @@
                     if (status === "Rejected") statusClass = "badge-rejected";
                     html += `<div class="loan-card">
                         <div style="display: flex; justify-content: space-between;">
-                            <h4>👤 ${escapeHtml(app.fullName)}</h4>
+                            <h4>👤 ${escapeHtml(app.fullName) || "Unknown"}</h4>
                             <span class="badge ${statusClass}">${status} (${approvalCount}/3)</span>
                         </div>
                         <div class="details-grid">
-                            <span>📧 ${escapeHtml(app.email)}</span>
-                            <span>💰 MWK ${formatNumber(app.loanAmount)}</span>
+                            <span>📧 ${escapeHtml(app.email) || "No email"}</span>
+                            <span>💰 MWK ${formatNumber(app.loanAmount) || "0"}</span>
                         </div>`;
                     if (status !== "Approved" && status !== "Rejected") {
                         html += `<div class="reply-toolbar">
@@ -355,9 +365,11 @@
                 });
                 container.innerHTML = html;
             } else {
+                console.error("❌ Load failed:", result.error);
                 document.getElementById("applicationsList").innerHTML = '<div class="loading">❌ ' + escapeHtml(result.error) + '</div>';
             }
         } catch (error) {
+            console.error("❌ Exception loading:", error);
             document.getElementById("applicationsList").innerHTML = '<div class="loading">❌ Failed to load</div>';
         }
     }
@@ -432,6 +444,8 @@
     document.getElementById("disbursementDate").setAttribute("min", today);
     
     console.log("✅ Page loaded - We Masau Loan Portal Ready");
+    console.log("📡 API URL:", API_URL);
+    showStatus("System ready. Please fill out the form.", "info");
 </script>
 </body>
 </html>
