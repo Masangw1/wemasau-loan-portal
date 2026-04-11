@@ -209,8 +209,7 @@
     }
     
     function jsonpRequest(action, data, callback) {
-        const callbackName = `jsonp_callback_${Date.now()}_${callbackCounter++}`;
-        const url = new URL(API_URL);
+const callbackName = `jsonp_callback_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;        const url = new URL(API_URL);
         url.searchParams.set('action', action);
         url.searchParams.set('data', JSON.stringify(data));
         url.searchParams.set('callback', callbackName);
