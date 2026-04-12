@@ -179,14 +179,6 @@
             display: block;
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
         @media (max-width: 768px) {
             .content {
                 padding: 20px;
@@ -230,7 +222,7 @@
                         </div>
                         <div class="form-group">
                             <label>Phone Number *</label>
-                            <input type="tel" id="phone" required>
+                            <input type="tel" id="phone" required placeholder="0999123456 or +265999123456">
                         </div>
                         <div class="form-group">
                             <label>Join Date *</label>
@@ -264,7 +256,7 @@
                         </div>
                         <div class="form-group">
                             <label>Loan Amount (MWK) *</label>
-                            <input type="number" id="loanAmount" required>
+                            <input type="number" id="loanAmount" required min="50000" max="10000000">
                         </div>
                         <div class="form-group">
                             <label>Loan Term (months) *</label>
@@ -301,11 +293,11 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Monthly Income (MWK) *</label>
-                            <input type="number" id="monthlyIncome" required>
+                            <input type="number" id="monthlyIncome" required min="0">
                         </div>
                         <div class="form-group">
                             <label>Monthly Expenses (MWK) *</label>
-                            <input type="number" id="monthlyExpenses" required>
+                            <input type="number" id="monthlyExpenses" required min="0">
                         </div>
                         <div class="form-group">
                             <label>Employment Status *</label>
@@ -323,7 +315,7 @@
                         </div>
                         <div class="form-group">
                             <label>Years Employed</label>
-                            <input type="number" id="yearsEmployed" step="0.5">
+                            <input type="number" id="yearsEmployed" step="0.5" min="0">
                         </div>
                         <div class="form-group">
                             <label>Existing Loans?</label>
@@ -334,7 +326,7 @@
                         </div>
                         <div class="form-group">
                             <label>Existing Loan Balance (if any)</label>
-                            <input type="number" id="existingBalance">
+                            <input type="number" id="existingBalance" min="0">
                         </div>
                     </div>
                 </div>
@@ -348,7 +340,7 @@
                         </div>
                         <div class="form-group">
                             <label>Guarantor 1 Phone *</label>
-                            <input type="tel" id="guarantor1Phone" required>
+                            <input type="tel" id="guarantor1Phone" required placeholder="0999123456">
                         </div>
                         <div class="form-group">
                             <label>Guarantor 2 Name *</label>
@@ -356,7 +348,7 @@
                         </div>
                         <div class="form-group">
                             <label>Guarantor 2 Phone *</label>
-                            <input type="tel" id="guarantor2Phone" required>
+                            <input type="tel" id="guarantor2Phone" required placeholder="0999123456">
                         </div>
                     </div>
                 </div>
@@ -374,19 +366,25 @@
     </div>
 
     <script>
-        // Configuration
-        const API_URL = "https://script.google.com/macros/s/AKfycbwCwKGV9Dg60eQS_-oPbovnnqbEuWxzIH0W9ceCrXkeiavGqXKI8xSvgtVbh8W_Yfrx/exec";
+        // ============================================
+        // SHEETY CONFIGURATION
+        // ============================================
+        // TODO: Replace this with your actual Sheety API URL
+        // Get it from https://sheety.co after creating your project
+        const SHEETY_API_URL = "https://api.sheety.co/YOUR_PROJECT_ID/YOUR_SHEET_NAME/Sheet1";
+        
+        // Your Google Sheet name (tab name) - change if your sheet has a different name
+        const SHEET_NAME = "Sheet1";
         
         console.log('✅ Page loaded - We Masau Loan Portal Ready');
-        console.log('📡 API URL:', API_URL);
+        console.log('📡 Sheety API URL:', SHEETY_API_URL);
         
-        // Get DOM elements
+        // DOM Elements
         const form = document.getElementById('loanForm');
         const submitBtn = document.getElementById('submitBtn');
         const loadingDiv = document.getElementById('loading');
         const alertDiv = document.getElementById('alert');
         
-        // Helper function to show alerts
         function showAlert(message, type = 'info') {
             alertDiv.className = `alert ${type}`;
             alertDiv.innerHTML = message;
@@ -398,12 +396,44 @@
             }, 5000);
         }
         
-        // Helper function to hide alert
         function hideAlert() {
             alertDiv.style.display = 'none';
         }
         
-        // Helper function to validate form
+        function getFormData() {
+            return {
+                timestamp: new Date().toISOString(),
+                applicationId: "WM-" + Date.now() + "-" + Math.random().toString(36).substr(2, 6).toUpperCase(),
+                fullName: document.getElementById('fullName').value,
+                memberId: document.getElementById('memberId').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                joinDate: document.getElementById('joinDate').value,
+                membershipStatus: document.getElementById('membershipStatus').value,
+                loanType: document.getElementById('loanType').value,
+                loanAmount: document.getElementById('loanAmount').value,
+                loanTerm: document.getElementById('loanTerm').value,
+                repaymentMethod: document.getElementById('repaymentMethod').value,
+                disbursementDate: document.getElementById('disbursementDate').value || '',
+                purpose: document.getElementById('purpose').value,
+                monthlyIncome: document.getElementById('monthlyIncome').value,
+                monthlyExpenses: document.getElementById('monthlyExpenses').value,
+                employmentStatus: document.getElementById('employmentStatus').value,
+                employer: document.getElementById('employer').value || '',
+                yearsEmployed: document.getElementById('yearsEmployed').value || '',
+                existingLoans: document.getElementById('existingLoans').value,
+                existingBalance: document.getElementById('existingBalance').value || '0',
+                guarantor1Name: document.getElementById('guarantor1Name').value,
+                guarantor1Phone: document.getElementById('guarantor1Phone').value,
+                guarantor2Name: document.getElementById('guarantor2Name').value,
+                guarantor2Phone: document.getElementById('guarantor2Phone').value,
+                approvalCount: 0,
+                approvalStatus: "Pending",
+                approvals: "[]",
+                rejectionReason: ""
+            };
+        }
+        
         function validateForm(data) {
             const required = ['fullName', 'memberId', 'email', 'phone', 'joinDate', 'membershipStatus', 
                             'loanType', 'loanAmount', 'loanTerm', 'repaymentMethod', 'purpose', 
@@ -431,136 +461,85 @@
                 return false;
             }
             
+            // Validate guarantor phones
+            if (!phoneRegex.test(data.guarantor1Phone)) {
+                showAlert('Please enter a valid phone number for Guarantor 1', 'error');
+                return false;
+            }
+            
+            if (!phoneRegex.test(data.guarantor2Phone)) {
+                showAlert('Please enter a valid phone number for Guarantor 2', 'error');
+                return false;
+            }
+            
             // Validate loan amount
-            if (parseFloat(data.loanAmount) < 50000) {
+            const loanAmount = parseFloat(data.loanAmount);
+            if (loanAmount < 50000) {
                 showAlert('Minimum loan amount is MWK 50,000', 'error');
                 return false;
             }
             
-            if (parseFloat(data.loanAmount) > 10000000) {
+            if (loanAmount > 10000000) {
                 showAlert('Maximum loan amount is MWK 10,000,000', 'error');
                 return false;
             }
             
             // Validate income vs expenses
-            if (parseFloat(data.monthlyExpenses) >= parseFloat(data.monthlyIncome)) {
+            const income = parseFloat(data.monthlyIncome);
+            const expenses = parseFloat(data.monthlyExpenses);
+            
+            if (expenses >= income) {
                 showAlert('Monthly expenses must be less than monthly income', 'error');
                 return false;
+            }
+            
+            // Check affordability (loan payment shouldn't exceed 40% of income)
+            const loanTerm = parseInt(data.loanTerm);
+            const estimatedMonthlyPayment = (loanAmount * 1.2) / loanTerm; // Assuming 20% interest
+            const maxPayment = income * 0.4;
+            
+            if (estimatedMonthlyPayment > maxPayment) {
+                showAlert(`Warning: Estimated monthly payment (MWK ${Math.round(estimatedMonthlyPayment).toLocaleString()}) exceeds 40% of your income. Consider a smaller loan or longer term.`, 'info');
             }
             
             return true;
         }
         
-        // Helper function to get form data
-        function getFormData() {
-            return {
-                fullName: document.getElementById('fullName').value,
-                memberId: document.getElementById('memberId').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                joinDate: document.getElementById('joinDate').value,
-                membershipStatus: document.getElementById('membershipStatus').value,
-                loanType: document.getElementById('loanType').value,
-                loanAmount: document.getElementById('loanAmount').value,
-                loanTerm: document.getElementById('loanTerm').value,
-                repaymentMethod: document.getElementById('repaymentMethod').value,
-                disbursementDate: document.getElementById('disbursementDate').value || '',
-                purpose: document.getElementById('purpose').value,
-                monthlyIncome: document.getElementById('monthlyIncome').value,
-                monthlyExpenses: document.getElementById('monthlyExpenses').value,
-                employmentStatus: document.getElementById('employmentStatus').value,
-                employer: document.getElementById('employer').value || '',
-                yearsEmployed: document.getElementById('yearsEmployed').value || '',
-                existingLoans: document.getElementById('existingLoans').value,
-                existingBalance: document.getElementById('existingBalance').value || '0',
-                guarantor1Name: document.getElementById('guarantor1Name').value,
-                guarantor1Phone: document.getElementById('guarantor1Phone').value,
-                guarantor2Name: document.getElementById('guarantor2Name').value,
-                guarantor2Phone: document.getElementById('guarantor2Phone').value
-            };
-        }
-        
-        // Helper function to reset form
         function resetForm() {
             form.reset();
-            // Set default values for selects
             document.getElementById('existingLoans').value = 'No';
+            document.getElementById('existingBalance').value = '';
         }
         
-        // Function to submit data using POST with CORS
-        async function submitApplication(data) {
-            console.log('📝 Submitting application:', data);
+        async function submitToSheety(data) {
+            console.log('📝 Submitting to Sheety:', data);
+            
+            // Sheety expects the data wrapped in the sheet name
+            const payload = {};
+            payload[SHEET_NAME] = data;
             
             try {
-                // Method 1: Using POST with fetch (recommended)
-                const response = await fetch(API_URL, {
+                const response = await fetch(SHEETY_API_URL, {
                     method: 'POST',
-                    mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        action: 'saveLoan',
-                        appData: data
-                    })
+                    body: JSON.stringify(payload)
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('Sheety error response:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
                 }
                 
                 const result = await response.json();
-                console.log('✅ Server response:', result);
+                console.log('Sheety success response:', result);
                 return result;
                 
-            } catch (fetchError) {
-                console.log('POST fetch failed, trying GET method...', fetchError);
-                
-                // Method 2: Fallback to GET with JSONP
-                return new Promise((resolve, reject) => {
-                    const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-                    const script = document.createElement('script');
-                    
-                    // Setup timeout
-                    const timeout = setTimeout(() => {
-                        if (window[callbackName]) {
-                            delete window[callbackName];
-                        }
-                        if (script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        reject(new Error('Request timeout - Please check your internet connection'));
-                    }, 30000);
-                    
-                    // Create callback function
-                    window[callbackName] = function(response) {
-                        clearTimeout(timeout);
-                        delete window[callbackName];
-                        if (script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        resolve(response);
-                    };
-                    
-                    // Build URL with parameters
-                    const params = new URLSearchParams({
-                        action: 'saveLoan',
-                        callback: callbackName,
-                        data: JSON.stringify(data)
-                    });
-                    
-                    script.src = `${API_URL}?${params.toString()}`;
-                    script.onerror = function() {
-                        clearTimeout(timeout);
-                        delete window[callbackName];
-                        if (script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        reject(new Error('Network error - Unable to connect to server'));
-                    };
-                    
-                    document.head.appendChild(script);
-                });
+            } catch (error) {
+                console.error('Fetch error:', error);
+                throw error;
             }
         }
         
@@ -581,40 +560,41 @@
             loadingDiv.classList.add('active');
             
             try {
-                // Submit application
-                const result = await submitApplication(formData);
+                // Submit to Sheety
+                const result = await submitToSheety(formData);
                 
-                console.log('Submission result:', result);
+                console.log('✅ Submission successful:', result);
                 
-                if (result.success) {
-                    // Show success message
-                    showAlert(`
-                        ✅ <strong>Application Submitted Successfully!</strong><br>
-                        Your Application ID: <strong>${result.applicationId}</strong><br>
-                        You will receive a confirmation email shortly.<br>
-                        Please save your Application ID for future reference.
-                    `, 'success');
-                    
-                    // Reset form
-                    resetForm();
-                    
-                    // Scroll to top to show success message
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    
-                } else {
-                    // Show error message
-                    showAlert(`
-                        ❌ <strong>Submission Failed</strong><br>
-                        ${result.error || 'An error occurred while submitting your application. Please try again.'}
-                    `, 'error');
-                }
+                // Show success message
+                showAlert(`
+                    ✅ <strong>Application Submitted Successfully!</strong><br><br>
+                    Your Application ID: <strong>${formData.applicationId}</strong><br><br>
+                    A confirmation email will be sent to ${formData.email}<br><br>
+                    <strong>Please save your Application ID for future reference.</strong>
+                `, 'success');
+                
+                // Reset form
+                resetForm();
+                
+                // Scroll to top to show success message
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 
             } catch (error) {
-                console.error('❌ Exception:', error);
+                console.error('❌ Submission failed:', error);
+                
+                let errorMessage = error.message;
+                if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Network error - Please check your internet connection and try again.';
+                } else if (error.message.includes('401')) {
+                    errorMessage = 'Authentication error - Please check your Sheety API URL.';
+                } else if (error.message.includes('404')) {
+                    errorMessage = 'API endpoint not found - Please verify your Sheety API URL.';
+                }
+                
                 showAlert(`
-                    ❌ <strong>Network Error</strong><br>
-                    Unable to submit application. Please check your internet connection and try again.<br>
-                    Error: ${error.message}
+                    ❌ <strong>Submission Failed</strong><br><br>
+                    ${errorMessage}<br><br>
+                    Please try again or contact support at ${EMAIL_ADMINS ? EMAIL_ADMINS[0] : 'the administrator'}.
                 `, 'error');
             } finally {
                 // Re-enable submit button and hide loading
@@ -633,9 +613,10 @@
         });
         
         document.getElementById('loanAmount').addEventListener('input', function() {
-            if (this.value < 50000) {
+            const amount = parseFloat(this.value);
+            if (amount < 50000) {
                 this.setCustomValidity('Minimum loan amount is MWK 50,000');
-            } else if (this.value > 10000000) {
+            } else if (amount > 10000000) {
                 this.setCustomValidity('Maximum loan amount is MWK 10,000,000');
             } else {
                 this.setCustomValidity('');
@@ -643,16 +624,22 @@
         });
         
         // Phone number formatting hint
-        document.getElementById('phone').addEventListener('input', function() {
-            const phone = this.value;
-            if (phone && !phone.match(/^(\+265|0)[1-9]\d{7,8}$/)) {
-                this.setCustomValidity('Enter valid Malawi phone (e.g., 0999123456 or +265999123456)');
+        function validatePhone(input) {
+            const phone = input.value;
+            const phoneRegex = /^(\+265|0)[1-9]\d{7,8}$/;
+            if (phone && !phoneRegex.test(phone)) {
+                input.setCustomValidity('Enter valid Malawi phone (e.g., 0999123456 or +265999123456)');
             } else {
-                this.setCustomValidity('');
+                input.setCustomValidity('');
             }
-        });
+        }
         
-        console.log('✅ Event listeners configured - Ready for submissions');
+        document.getElementById('phone').addEventListener('input', function() { validatePhone(this); });
+        document.getElementById('guarantor1Phone').addEventListener('input', function() { validatePhone(this); });
+        document.getElementById('guarantor2Phone').addEventListener('input', function() { validatePhone(this); });
+        
+        console.log('✅ Ready - Sheety integration active');
+        console.log('ℹ️ Free tier: 200 requests/month - Perfect for your usage');
     </script>
 </body>
 </html>
